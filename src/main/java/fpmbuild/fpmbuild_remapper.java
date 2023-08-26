@@ -5,8 +5,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import com.asbestosstar.assistremapper.Mappings;
@@ -17,13 +22,15 @@ public class fpmbuild_remapper {
 	public File fpm;
 	public Mappings mappings;
 	public RemapperInstance remapper;
+	public String path_to_fpm;
 	
 	public fpmbuild_remapper(String path_to_fpm, String mappings_location, String dependency_location) {
 		// TODO Auto-generated constructor stub
 	File fpm = new File(path_to_fpm);
 	File mappings = new File(mappings_location);
 	File dependency = new File(dependency_location);
-	
+	this.fpm=fpm;
+	this.path_to_fpm=path_to_fpm;
 	try {
 		this.mappings=new Mappings(new FileInputStream(mappings));
 		String run_dir = System.getProperty("user.dir");
@@ -50,18 +57,20 @@ public class fpmbuild_remapper {
 	
 	public void mapInPlace() {
 try {
-	remapper.remapJar(new JarFile(fpm));
 	String run_dir = System.getProperty("user.dir");
-File build_root= new File(run_dir+"/BUILD_ROOT/");
+	String br = new String(run_dir+"/BUILD_ROOT/");
+File build_root= new File(br);
 
-	
-	
-	 try {
+extractFilesFromZip(path_to_fpm,br);
+File unmapped = new File(fpm.getAbsoluteFile()+".unmapped.jar");	
+fpm.renameTo(unmapped);//Need to update mapper to work on nonjars
+remapper.remapJar(new JarFile(unmapped));
+
+try {
          FileOutputStream fos = new FileOutputStream(fpm);
          ZipOutputStream zos = new ZipOutputStream(fos);
 
-         
-         zipFolder(build_root, build_root.getName(), zos);
+         zipFolder(build_root, br, zos);
 
          zos.close();
          fos.close();
@@ -85,32 +94,92 @@ File build_root= new File(run_dir+"/BUILD_ROOT/");
 	
 	
 	
-	public static void zipFolder(File folder, String superFolder, ZipOutputStream zos) throws IOException {
-        for (File file : folder.listFiles()) {
-            if (file.isDirectory()) {
-//                zipFolder(file, superFolder + "/" + file.getName(), zos);
-                zipFolder(file,  file.getName(), zos);
+	
+public static void zipFolder(File folder, String superFolder, ZipOutputStream zos) throws IOException {
+    Set<String> entryNames = new HashSet<>();
+    
+    for (File file : folder.listFiles()) {
+        if (file.isDirectory()) {
+            zipFolder(file, superFolder, zos);
+//            zipFolder(file, file.getName(), zos);
 
-            } else {
-                byte[] buffer = new byte[1024];
-                FileInputStream fis = new FileInputStream(file);
-               // zos.putNextEntry(new ZipEntry(superFolder + "/" + file.getName()));
-                zos.putNextEntry(new ZipEntry(file.getName()));
+            //            zipFolder(file, superFolder + "/" + file.getName(), zos);
 
-                int length;
-                while ((length = fis.read(buffer)) > 0) {
-                    zos.write(buffer, 0, length);
+        } else {
+            byte[] buffer = new byte[1024];
+            FileInputStream fis = new FileInputStream(file);
+            // Get the relative path of the current file with respect to the superFolder
+
+            String relativePath = new String(folder+"/"+file.getName()).replace(superFolder, "");
+            System.out.println(relativePath);
+            String entryName = relativePath;
+            int i = 1;
+            while (entryNames.contains(entryName)) {
+                int extensionIndex = relativePath.lastIndexOf('.');
+                if (extensionIndex != -1) {
+                    entryName = relativePath.substring(0, extensionIndex) + "_" + i + relativePath.substring(extensionIndex);
+                } else {
+                    entryName = relativePath + "_" + i;
                 }
-
-                zos.closeEntry();
-                fis.close();
+                i++;
             }
+            
+            entryNames.add(entryName);
+            zos.putNextEntry(new ZipEntry(entryName));
+
+            int length;
+            while ((length = fis.read(buffer)) > 0) {
+                zos.write(buffer, 0, length);
+            }
+
+            zos.closeEntry();
+            fis.close();
         }
     }
-	
-	
-	
-	
-	
+}	
+
+
+
+
+
+
+public static void extractFilesFromZip(String zipFilePath, String destinationFolderPath) {
+    try (ZipFile zipFile = new ZipFile(zipFilePath)) {
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+            String entryName = entry.getName();
+            File destFile = new File(destinationFolderPath + entryName);
+            
+            // Create destination folder if it does not exist
+            new File(destFile.getParent()).mkdirs();
+
+            if (!entry.isDirectory()) {
+                extractFile(zipFile, entry, destFile);
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
+private static void extractFile(ZipFile zipFile, ZipEntry entry, File destFile) throws IOException {
+    try (InputStream is = zipFile.getInputStream(entry);
+         FileOutputStream fos = new FileOutputStream(destFile)) {
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = is.read(buffer)) > 0) {
+            fos.write(buffer, 0, len);
+        }
+    }
+}
+
+
+
 
 }
+
+	
+
+
