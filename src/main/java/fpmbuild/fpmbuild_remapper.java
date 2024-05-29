@@ -15,13 +15,17 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import com.asbestosstar.assistremapper.Mappings;
-import com.asbestosstar.assistremapper.RemapperInstance;
+import com.asbestosstar.assistremapper.mappings.PDMEMappings;
+import com.asbestosstar.assistremapper.remapper.JarRemapper;
+
+
+
 
 public class fpmbuild_remapper {
 
 	public File fpm;
 	public Mappings mappings;
-	public RemapperInstance remapper;
+	public JarRemapper remapper;
 	public String path_to_fpm;
 	
 	public fpmbuild_remapper(String path_to_fpm, String mappings_location, String dependency_location) {
@@ -32,14 +36,14 @@ public class fpmbuild_remapper {
 	this.fpm=fpm;
 	this.path_to_fpm=path_to_fpm;
 	try {
-		this.mappings=new Mappings(new FileInputStream(mappings));
+		this.mappings=new PDMEMappings(new FileInputStream(mappings));//Need to soon allow for other mappings
 		String run_dir = System.getProperty("user.dir");
-		this.remapper = new RemapperInstance(this.mappings,run_dir+"/BUILD_ROOT/");
+		this.remapper = new JarRemapper(this.mappings,run_dir+"/BUILD_ROOT/");
 		
 		//get all the files in the dependency folder
 		for(File dep: dependency.listFiles())
 		{
-			remapper.addToClasspathJar(new JarFile(dep));
+			remapper.addToClasspathJar(new JarFile(dep),false);
 		}
 		
 		
