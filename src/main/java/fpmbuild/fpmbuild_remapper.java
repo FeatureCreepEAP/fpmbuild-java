@@ -38,12 +38,14 @@ public class fpmbuild_remapper {
 	try {
 		this.mappings=new PDMEMappings(new FileInputStream(mappings));//Need to soon allow for other mappings
 		String run_dir = System.getProperty("user.dir");
-		this.remapper = new JarRemapper(this.mappings,run_dir+"/BUILD_ROOT/");
+		this.remapper = new JarRemapper(this.mappings.getReverse(),run_dir+"/BUILD_ROOT/");
 		
 		//get all the files in the dependency folder
 		for(File dep: dependency.listFiles())
 		{
+			if(!dep.isDirectory()) {
 			remapper.addToClasspathJar(new JarFile(dep),false);
+			}
 		}
 		
 		
