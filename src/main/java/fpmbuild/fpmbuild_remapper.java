@@ -2,7 +2,6 @@ package fpmbuild;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,37 +34,28 @@ public class fpmbuild_remapper {
 	File dependency = new File(dependency_location);
 	this.fpm=fpm;
 	this.path_to_fpm=path_to_fpm;
-	try {
-		this.mappings=new PDMEMappings(new FileInputStream(mappings));//Need to soon allow for other mappings
-		String run_dir = System.getProperty("user.dir");
-		this.remapper = new JarRemapper(this.mappings.getReverse(),run_dir+"/BUILD_ROOT/");
-		
-		//get all the files in the dependency folder
-		for(File dep: dependency.listFiles())
-		{
-			if(!dep.isDirectory()) {
-<<<<<<< HEAD
-			remapper.addToClasspathJar(new JarFile(dep),false);
-			}
-		}	
-=======
+
+		try {
+			this.mappings=new PDMEMappings(new FileInputStream(mappings));//Need to soon allow for other mappings
+			String run_dir = System.getProperty("user.dir");
+			this.remapper = new JarRemapper(this.mappings.getReverse(),run_dir+"/BUILD_ROOT/");
+			
+			//get all the files in the dependency folder
+			for(File dep: dependency.listFiles())
+			{
+				if(!dep.isDirectory()) {
 				remapper.addToClasspathJar(new JarFile(dep),false);
+				}
 			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
+	
 		}
->>>>>>> main
-		
-		
-	} catch (FileNotFoundException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
+
 	
-	
-	
-	}
+
 	
 	public void mapInPlace() {
 try {
