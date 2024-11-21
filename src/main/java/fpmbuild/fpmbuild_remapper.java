@@ -44,9 +44,15 @@ public class fpmbuild_remapper {
 		for(File dep: dependency.listFiles())
 		{
 			if(!dep.isDirectory()) {
+<<<<<<< HEAD
 			remapper.addToClasspathJar(new JarFile(dep),false);
 			}
 		}	
+=======
+				remapper.addToClasspathJar(new JarFile(dep),false);
+			}
+		}
+>>>>>>> main
 		
 		
 	} catch (FileNotFoundException e) {
