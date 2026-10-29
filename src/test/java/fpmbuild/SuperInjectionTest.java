@@ -3,6 +3,7 @@ package fpmbuild;
 import fpmbuild.json.Json;
 import fpmbuild.spec.Spec;
 import fpmbuild.superinject.SuperInjector;
+import fpmbuild.util.Hashing;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -155,5 +156,5 @@ final class SuperInjectionTest {
     }
 
     private static String latin1(byte[] bytes) { return new String(bytes, StandardCharsets.ISO_8859_1); }
-    private static String sha(Path file) throws Exception { return fpmbuild.util.Hashing.sha256(file); }
+    private static String sha(Path file) throws Exception { return Hashing.sha256(file); }
 }

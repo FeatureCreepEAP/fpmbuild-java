@@ -5,9 +5,34 @@
 
   <groupId>com.asbestosstar</groupId>
   <artifactId>fpmbuild-java</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
+  <packaging>jar</packaging>
   <name>FPMBuild Java</name>
   <description>Java 25 replacement for the Ruby FPMBuild tool</description>
+  <url>https://github.com/FeatureCreepEAP/fpmbuild-java</url>
+
+  <licenses>
+    <license>
+      <name>The Unlicense</name>
+      <url>https://unlicense.org/</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>AsbestosStar</name>
+      <email>asbestosstar@asbestosstar.com</email>
+      <organization>AsbestosStar</organization>
+      <organizationUrl>https://asbestosstar.com</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/FeatureCreepEAP/fpmbuild-java.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:FeatureCreepEAP/fpmbuild-java.git</developerConnection>
+    <url>https://github.com/FeatureCreepEAP/fpmbuild-java</url>
+    <tag>HEAD</tag>
+  </scm>
 
   <properties>
     <maven.compiler.release>25</maven.compiler.release>
@@ -77,4 +102,76 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>central-release</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.2.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.4.0</version>
+            <configuration>
+              <encoding>${project.build.sourceEncoding}</encoding>
+              <docencoding>UTF-8</docencoding>
+              <doclint>all,-missing</doclint>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.0.1</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.10.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

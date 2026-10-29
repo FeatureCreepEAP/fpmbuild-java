@@ -13,6 +13,10 @@ import java.util.regex.Pattern;
 final class GradleProjectInspector {
     private static final Pattern ASSIGN = Pattern.compile("(?m)^\\s*(group|version|archivesBaseName|archiveBaseName)\\s*(?:=)?\\s*[\\\"']([^\\\"']+)[\\\"']");
     private static final Pattern JAVA_RELEASE = Pattern.compile("(?m)(?:JavaLanguageVersion\\.of\\(|languageVersion\\s*=\\s*JavaLanguageVersion\\.of\\(|options\\.release\\s*=\\s*)(\\d+)");
+    private static final Pattern MINECRAFT_VERSION = Pattern.compile("minecraftVersion\\s*(?:=|\\()\\s*[\\\"']([^\\\"']+)[\\\"']");
+    private static final Pattern LEADING_DIGITS = Pattern.compile("^\\d+");
+    private static final String FCDEPENDENCIES_PLUGIN_ID = "com.asbestosstar.fcdependencies";
+    private static final String RUN_TASKS_MIN_MINECRAFT = "26.1.2";
 
     ProjectInfo inspect(Path root) throws IOException {
         Path groovy = root.resolve("build.gradle");
@@ -27,7 +31,10 @@ final class GradleProjectInspector {
         Matcher j=JAVA_RELEASE.matcher(text); String release=j.find()?j.group(1):"";
         Path wrapperPath = findWrapper(root);
         boolean wrapper = wrapperPath != null;
-        boolean fcdeps=text.toLowerCase().contains("fcdependencies") || scanForFcDependencies(root);
+        String all = text + "\n" + buildFilesText(root);
+        boolean fcdeps=all.toLowerCase().contains("fcdependencies");
+        Matcher mc = MINECRAFT_VERSION.matcher(all);
+        String minecraftVersion = mc.find() ? mc.group(1) : "";
         List<Path> jars=ProjectInspector.findJarCandidates(root.resolve("build").resolve("libs"), true);
         if (jars.isEmpty()) jars = findSubprojectJars(root);
         Path primary=ProjectInspector.choosePrimaryJar(jars,artifact,version);
@@ -37,13 +44,39 @@ final class GradleProjectInspector {
         details.put("kotlinDsl", descriptor.endsWith("build.gradle.kts"));
         details.put("settings", settings(root));
         details.put("shadowPlugin", text.contains("com.github.johnrengelman.shadow")||text.contains("com.gradleup.shadow")||text.contains("shadowJar"));
-        details.put("loomPlugin", text.toLowerCase().contains("fabric-loom")||text.contains("net.fabricmc.loom"));
+        details.put("loomPlugin", all.toLowerCase().contains("fabric-loom")||all.contains("net.fabricmc.loom"));
+        details.put("fcdependenciesPlugin", all.contains(FCDEPENDENCIES_PLUGIN_ID));
+        details.put("minecraftVersion", minecraftVersion);
+        details.put("supportsRunTasks", isAtLeast(minecraftVersion, RUN_TASKS_MIN_MINECRAFT));
         details.put("buildExecutable", executable);
         return new ProjectInfo(root,BuildTool.GRADLE,descriptor,group,artifact,version,release,wrapper,fcdeps,jars,primary,command,details);
     }
 
-    private static boolean scanForFcDependencies(Path root) throws IOException {
-        try(var s=Files.walk(root,2)){return s.filter(Files::isRegularFile).filter(p->p.getFileName().toString().startsWith("build.gradle")).anyMatch(p->{try{return Files.readString(p).toLowerCase().contains("fcdependencies");}catch(IOException e){return false;}});}
+    private static String buildFilesText(Path root) throws IOException {
+        try(var s=Files.walk(root,2)){
+            return s.filter(Files::isRegularFile).filter(p->p.getFileName().toString().startsWith("build.gradle"))
+                    .map(p->{try{return Files.readString(p);}catch(IOException e){return "";}}).collect(java.util.stream.Collectors.joining("\n"));
+        }
+    }
+
+    private static boolean isAtLeast(String version, String minimum) {
+        if (version == null || version.isBlank()) return false;
+        int[] v = versionParts(version), m = versionParts(minimum);
+        for (int i = 0; i < Math.max(v.length, m.length); i++) {
+            int a = i < v.length ? v[i] : 0, b = i < m.length ? m[i] : 0;
+            if (a != b) return a > b;
+        }
+        return true;
+    }
+
+    private static int[] versionParts(String version) {
+        String[] parts = version.trim().split("[.\\-]");
+        int[] out = new int[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            Matcher digits = LEADING_DIGITS.matcher(parts[i]);
+            out[i] = digits.find() ? Integer.parseInt(digits.group()) : 0;
+        }
+        return out;
     }
     private static List<Path> findSubprojectJars(Path root) throws IOException {
         if(!Files.isDirectory(root))return List.of();

@@ -42,3 +42,9 @@ mvn clean test
 ## SuperInjection ownership regression
 
 `SuperInjectionTest` verifies that an injected JAR contains `META-INF/featurecreep/not-superloader-owned` and that the marker identifies the compatibility metadata as FeatureCreep-owned. The FeatureCreep Loader integration suite separately verifies that this marker overrides superloader classification while an unmarked foreign superloader JAR is still skipped.
+
+## Gradle FCDependencies detection
+
+`GradleProjectInspectorTest` covers the `com.asbestosstar.fcdependencies` plugin id, the Fabric Loom
+migration flag, and the `supportsRunTasks` rule (true for 26.1.2 and newer, false for 26.1.1,
+26.1 and 1.21.4, and false when no version is declared).
